@@ -64,5 +64,6 @@ export interface AppConfig {
   aiBaseUrl?: string;
   aiApiKey: string;
   aiModel: string;
-  checkInterval: number;
+  cron: string;
+  timezone: string;
 }

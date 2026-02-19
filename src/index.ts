@@ -1,8 +1,9 @@
 import 'dotenv/config';
+import { CronJob } from 'cron';
 import { loadConfig, loadSubscriptions } from './config.js';
 import { loadState, saveState, checkRepo } from './github.js';
 import { createAIClient, categorizeRelease } from './ai.js';
-import { formatMessage, splitMessages } from './formatter.js';
+import { splitMessages } from './formatter.js';
 import { sendMessage } from './telegram.js';
 import type { AppState, CategorizedRelease } from './types.js';
 
@@ -35,7 +36,7 @@ async function processRepo(
 
   const categorized: CategorizedRelease[] = [];
   for (const release of result.newReleases) {
-    categorized.push(await categorizeRelease(model, release));
+    categorized.push(await categorizeRelease(model, release, config.timezone));
   }
 
   const messages = splitMessages(repo, categorized);
@@ -90,20 +91,25 @@ async function runCheck(): Promise<void> {
 
 async function main(): Promise<void> {
   console.log(
-    `Started. Provider: ${config.aiProvider}, Model: ${config.aiModel}, Interval: ${config.checkInterval}s`,
+    `Started. Provider: ${config.aiProvider}, Model: ${config.aiModel}, Timezone: ${config.timezone}, Cron: ${config.cron}`,
   );
 
   await runCheck();
 
-  const timer = setInterval(async () => {
-    if (!running) return;
-    await runCheck();
-  }, config.checkInterval * 1000);
+  const job = CronJob.from({
+    cronTime: config.cron,
+    timeZone: config.timezone,
+    start: true,
+    onTick: async () => {
+      if (!running) return;
+      await runCheck();
+    },
+  });
 
   const shutdown = () => {
     console.log('\nShutting down...');
     running = false;
-    clearInterval(timer);
+    job.stop();
   };
 
   process.on('SIGINT', shutdown);

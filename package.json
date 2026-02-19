@@ -13,6 +13,7 @@
     "@ai-sdk/google": "^3.0.29",
     "@ai-sdk/openai": "^3.0.30",
     "ai": "^6.0.91",
+    "cron": "^4.4.0",
     "dotenv": "^17.3.1"
   },
   "devDependencies": {

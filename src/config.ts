@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { validateCronExpression } from 'cron';
 import type { AIProvider, AppConfig } from './types.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -11,12 +12,32 @@ function requiredEnv(key: string): string {
   return val;
 }
 
+function validateTimezone(timezone: string): void {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format(new Date());
+  } catch {
+    throw new Error(
+      `Invalid TIMEZONE: ${timezone}. Use IANA timezone names like Asia/Shanghai, UTC, America/New_York`,
+    );
+  }
+}
+
 export function loadConfig(): AppConfig {
   const provider = (process.env.AI_PROVIDER || 'openai-completions') as AIProvider;
+  const timezone = process.env.TIMEZONE || process.env.TZ || 'Asia/Shanghai';
+  const cron = requiredEnv('CRON');
+
   if (!VALID_PROVIDERS.has(provider)) {
     throw new Error(
       `Invalid AI_PROVIDER: ${provider}. Must be one of: openai-completions, openai-responses, google, anthropic`,
     );
+  }
+
+  validateTimezone(timezone);
+
+  const cronValidation = validateCronExpression(cron);
+  if (!cronValidation.valid) {
+    throw new Error(`Invalid CRON: ${cron}. ${cronValidation.error}`);
   }
 
   return {
@@ -27,7 +48,8 @@ export function loadConfig(): AppConfig {
     aiBaseUrl: process.env.AI_BASE_URL || undefined,
     aiApiKey: requiredEnv('AI_API_KEY'),
     aiModel: requiredEnv('AI_MODEL'),
-    checkInterval: Number(process.env.CHECK_INTERVAL) || 900,
+    cron,
+    timezone,
   };
 }
 

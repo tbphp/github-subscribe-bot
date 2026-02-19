@@ -58,7 +58,11 @@ docker compose down
 | `AI_BASE_URL` | ❌ | 各 SDK 默认值 | 自定义 API 地址（代理/自部署） |
 | `AI_API_KEY` | ✅ | — | AI 服务 API Key |
 | `AI_MODEL` | ✅ | — | 模型名称 |
-| `CHECK_INTERVAL` | ❌ | `900` | 检查间隔（秒），默认 15 分钟 |
+| `TIMEZONE` | ❌ | `Asia/Shanghai` | 全局时区（IANA），用于 cron 调度和消息时间格式化 |
+| `CRON` | ✅ | — | Cron 表达式（6 字段，含秒） |
+
+> 兼容性：若未设置 `TIMEZONE`，程序会回退读取 `TZ`；两者都未设置时默认 `Asia/Shanghai`。
+> 校验说明：`TIMEZONE` 必须是 IANA 时区（例如 `Asia/Shanghai`、`UTC`），`UTC+8` 这类写法会被判定为非法并在启动时报错。
 
 ### AI 提供商配置
 
@@ -82,8 +86,27 @@ TELEGRAM_CHAT_ID=@my_channel
 AI_PROVIDER=openai-completions
 AI_API_KEY=sk-xxxxxxxxxxxx
 AI_MODEL=gpt-4o-mini
-CHECK_INTERVAL=900
+TIMEZONE=Asia/Shanghai
+CRON=0 */10 9-23 * * *
 ```
+
+### 定时调度（Cron）
+
+程序仅使用 `CRON` 调度（基于 `cron` 包）：
+
+```env
+TIMEZONE=Asia/Shanghai
+CRON=0 */10 9-23 * * *
+```
+
+含义：每天 09:00-23:59，每 10 分钟检查一次（夜间不通知）。
+
+常用示例：
+
+- 工作日白天每 10 分钟：`0 */10 9-23 * * 1-5`
+- 每天 08:30：`0 30 8 * * *`
+
+> 说明：`CRON` 使用 6 字段格式（秒 分 时 日 月 周），例如 `0 */10 9-23 * * *`。
 
 ## 订阅仓库
 

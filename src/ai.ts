@@ -14,12 +14,21 @@ const VALID_TYPES = new Set<CategoryType>([
   'feat', 'fix', 'perf', 'refactor', 'docs', 'other',
 ]);
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const offset = d.getTime() + 8 * 3600_000;
-  const cn = new Date(offset);
-  return `${cn.getUTCFullYear()}-${pad(cn.getUTCMonth() + 1)}-${pad(cn.getUTCDate())} ${pad(cn.getUTCHours())}:${pad(cn.getUTCMinutes())}:${pad(cn.getUTCSeconds())}`;
+function formatDate(iso: string, timeZone: string): string {
+  const dtf = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = dtf.formatToParts(new Date(iso));
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
 }
 
 const SYSTEM_PROMPT = `You are a GitHub Release Notes translator and categorizer.
@@ -60,10 +69,11 @@ export function createAIClient(config: AppConfig): LanguageModel {
 export async function categorizeRelease(
   model: LanguageModel,
   release: GitHubRelease,
+  timeZone: string,
 ): Promise<CategorizedRelease> {
   const base: CategorizedRelease = {
     tag: release.tag_name,
-    date: formatDate(release.published_at),
+    date: formatDate(release.published_at, timeZone),
     url: release.html_url,
     categories: [],
   };
