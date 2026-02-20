@@ -21,7 +21,7 @@ GitHub リポジトリの Release を購読し、AI で自動的に変更履歴�
 
 ### 前提条件
 
-1. **GitHub Token** — [Personal Access Token を作成](https://github.com/settings/tokens)（公開リポジトリには追加権限不要）
+1. **GitHub Token**（任意）— [Personal Access Token を作成](https://github.com/settings/tokens)。API レート制限を引き上げます。多数のリポジトリを購読する場合や高頻度ポーリング時に推奨
 2. **Telegram Bot** — [@BotFather](https://t.me/BotFather) で Bot を作成し Token を取得
 3. **Telegram Chat ID** — チャンネルユーザー名（例：`@my_channel`）またはグループ/ユーザーの数値 ID
 4. **AI API Key** — 対応する AI プロバイダーの API Key
@@ -53,7 +53,7 @@ docker compose down
 
 | 変数 | 必須 | デフォルト | 説明 |
 |------|------|-----------|------|
-| `GITHUB_TOKEN` | ✅ | — | GitHub Personal Access Token |
+| `GITHUB_TOKEN` | ❌ | — | GitHub Personal Access Token（任意、多数リポジトリや高頻度ポーリング時に推奨） |
 | `TELEGRAM_BOT_TOKEN` | ✅ | — | Telegram Bot Token |
 | `TELEGRAM_CHAT_ID` | ✅ | — | 配信先チャンネル/グループ/ユーザー ID |
 | `AI_PROVIDER` | ❌ | `openai-completions` | AI プロバイダー（下記参照） |
@@ -85,7 +85,7 @@ docker compose down
 `.env` の例：
 
 ```env
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+# GITHUB_TOKEN=ghp_xxxxxxxxxxxx  # 任意、多数リポジトリ時に推奨
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF
 TELEGRAM_CHAT_ID=@my_channel
 AI_PROVIDER=openai-completions

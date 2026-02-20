@@ -21,7 +21,7 @@ Subscribe to GitHub repository releases, automatically translate and categorize 
 
 ### Prerequisites
 
-1. **GitHub Token** — [Create a Personal Access Token](https://github.com/settings/tokens) (no extra scopes needed for public repos)
+1. **GitHub Token** (Optional) — [Create a Personal Access Token](https://github.com/settings/tokens) for higher API rate limits. Recommended if you subscribe to many repos or use frequent polling
 2. **Telegram Bot** — Create via [@BotFather](https://t.me/BotFather) to get the Bot Token
 3. **Telegram Chat ID** — Channel username (e.g. `@my_channel`) or group/user numeric ID
 4. **AI API Key** — From any supported AI provider
@@ -53,7 +53,7 @@ All settings are configured via environment variables in the `.env` file:
 
 | Variable             | Required | Default              | Description                                   |
 | -------------------- | -------- | -------------------- | --------------------------------------------- |
-| `GITHUB_TOKEN`       | ✅       | —                    | GitHub Personal Access Token                  |
+| `GITHUB_TOKEN`       | ❌       | —                    | GitHub Personal Access Token (optional, recommended for high-frequency polling) |
 | `TELEGRAM_BOT_TOKEN` | ✅       | —                    | Telegram Bot Token                            |
 | `TELEGRAM_CHAT_ID`   | ✅       | —                    | Target channel/group/user ID                  |
 | `AI_PROVIDER`        | ❌       | `openai-completions` | AI provider (see below)                       |
@@ -85,7 +85,7 @@ Supported `AI_PROVIDER` values:
 `.env` example:
 
 ```env
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+# GITHUB_TOKEN=ghp_xxxxxxxxxxxx  # Optional, recommended for many repos
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF
 TELEGRAM_CHAT_ID=@my_channel
 AI_PROVIDER=openai-completions

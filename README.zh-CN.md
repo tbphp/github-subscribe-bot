@@ -21,7 +21,7 @@
 
 ### 前置准备
 
-1. **GitHub Token** — [创建 Personal Access Token](https://github.com/settings/tokens)，无需额外权限（公开仓库）
+1. **GitHub Token**（可选）— [创建 Personal Access Token](https://github.com/settings/tokens)，可提高 API 频率限制。订阅仓库多或轮询频率高时建议配置
 2. **Telegram Bot** — 通过 [@BotFather](https://t.me/BotFather) 创建 Bot，获取 Token
 3. **Telegram Chat ID** — 频道用户名（如 `@my_channel`）或群组/个人数字 ID
 4. **AI API Key** — 任选一个 AI 提供商的 API Key
@@ -53,7 +53,7 @@ docker compose down
 
 | 变量                 | 必填 | 默认值               | 说明                                             |
 | -------------------- | ---- | -------------------- | ------------------------------------------------ |
-| `GITHUB_TOKEN`       | ✅   | —                    | GitHub Personal Access Token                     |
+| `GITHUB_TOKEN`       | ❌   | —                    | GitHub Personal Access Token（可选，仓库多或轮询频率高时建议配置） |
 | `TELEGRAM_BOT_TOKEN` | ✅   | —                    | Telegram Bot Token                               |
 | `TELEGRAM_CHAT_ID`   | ✅   | —                    | 目标频道/群组/用户 ID                            |
 | `AI_PROVIDER`        | ❌   | `openai-completions` | AI 提供商（见下方）                              |
@@ -85,7 +85,7 @@ docker compose down
 `.env` 配置示例：
 
 ```env
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+# GITHUB_TOKEN=ghp_xxxxxxxxxxxx  # 可选，仓库多时建议配置
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF
 TELEGRAM_CHAT_ID=@my_channel
 AI_PROVIDER=openai-completions
