@@ -1,6 +1,5 @@
 {
   "repos": [
-    "vuejs/core",
-    "nodejs/node"
+    "tbphp/gpt-load"
   ]
 }

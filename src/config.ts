@@ -50,6 +50,7 @@ export function loadConfig(): AppConfig {
     aiModel: requiredEnv('AI_MODEL'),
     cron,
     timezone,
+    targetLang: process.env.TARGET_LANG || 'English',
   };
 }
 

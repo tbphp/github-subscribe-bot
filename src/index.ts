@@ -39,10 +39,10 @@ async function processRepo(
 
   const categorized: CategorizedRelease[] = [];
   for (const release of result.newReleases) {
-    categorized.push(await categorizeRelease(model, release, config.timezone));
+    categorized.push(await categorizeRelease(model, release, config.timezone, config.targetLang));
   }
 
-  const messages = splitMessages(repo, categorized);
+  const messages = splitMessages(repo, categorized, config.targetLang);
 
   for (const msg of messages) {
     const ok = await sendMessage(
@@ -94,7 +94,7 @@ async function runCheck(): Promise<void> {
 
 async function main(): Promise<void> {
   console.log(
-    `Started. Provider: ${config.aiProvider}, Model: ${config.aiModel}, Timezone: ${config.timezone}, Cron: ${config.cron}`,
+    `Started. Provider: ${config.aiProvider}, Model: ${config.aiModel}, Lang: ${config.targetLang}, Timezone: ${config.timezone}, Cron: ${config.cron}`,
   );
 
   await runCheck();

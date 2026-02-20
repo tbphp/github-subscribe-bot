@@ -76,10 +76,11 @@ function formatDate(iso: string, timeZone: string): string {
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
 }
 
-const SYSTEM_PROMPT = `You are a GitHub Release Notes translator and categorizer.
+function buildSystemPrompt(targetLang: string): string {
+  return `You are a GitHub Release Notes translator and categorizer.
 
 Your task:
-1. Translate all content to Chinese (简体中文)
+1. Translate all content to ${targetLang}
 2. Categorize each change into exactly ONE type:
    - feat: New features, capabilities, or functionality
    - fix: Bug fixes, error corrections
@@ -89,12 +90,14 @@ Your task:
    - other: Everything else (breaking changes, deprecations, etc.)
 
 Rules:
-- Each item must be a concise one-line description in Chinese
+- Each item must be a concise one-line description in ${targetLang}
 - Merge duplicate or very similar items
 - Skip CI/build/dependency-only changes unless significant
 - If input is empty or meaningless, return empty categories array
 - NEVER return markdown code fences
 - ONLY return valid JSON matching the schema
+
+Note: The following examples are for reference only. You MUST output in ${targetLang}.
 
 Examples:
 
@@ -185,6 +188,7 @@ Output:
 {
   "categories": []
 }`;
+}
 
 export function createAIClient(config: AppConfig): LanguageModelV3 {
   const opts = {
@@ -208,6 +212,7 @@ export async function categorizeRelease(
   model: LanguageModelV3,
   release: GitHubRelease,
   timeZone: string,
+  targetLang: string,
 ): Promise<CategorizedRelease> {
   const base: CategorizedRelease = {
     tag: release.tag_name,
@@ -222,7 +227,7 @@ export async function categorizeRelease(
   try {
     const { output } = await generateText({
       model,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(targetLang),
       prompt: release.body,
       output: Output.object({ schema: RELEASE_OUTPUT_SCHEMA }),
       temperature: 0,

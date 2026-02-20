@@ -1,5 +1,6 @@
 node_modules/
 dist/
 .env
-data/state.json
+data/*
+!data/.gitkeep
 subscribe.json

@@ -1,83 +1,88 @@
 # GitHub Subscribe Bot
 
-订阅 GitHub 仓库的 Release，通过 AI 自动将更新日志翻译为中文并分类，推送到 Telegram 频道/群组。
+English | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
-## 功能特性
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-green.svg)](https://nodejs.org/)
 
-- 定时轮询 GitHub Release（支持 ETag 缓存，节省 API 配额）
-- AI 自动翻译 + 分类（新功能、修复、优化、重构、文档、其他）
-- 支持多种 AI 提供商：OpenAI / Google Gemini / Anthropic Claude
-- Telegram 消息自动分割（超过 4096 字符时拆分发送）
-- 发送失败自动重试（最多 3 次）
-- Docker 一键部署
+Subscribe to GitHub repository releases, automatically translate and categorize changelogs via AI, and push to Telegram channels/groups.
 
-## 快速开始
+## Features
 
-### 前置准备
+- Scheduled GitHub Release polling (with ETag caching to save API quota)
+- AI-powered translation + categorization (Features, Bug Fixes, Performance, Refactoring, Documentation, Other)
+- Multiple AI providers: OpenAI / Google Gemini / Anthropic Claude
+- Configurable target language for translation (default: English)
+- Auto-split Telegram messages (when exceeding 4096 characters)
+- Auto-retry on send failure (up to 3 times)
+- One-click Docker deployment
 
-1. **GitHub Token** — [创建 Personal Access Token](https://github.com/settings/tokens)，无需额外权限（公开仓库）
-2. **Telegram Bot** — 通过 [@BotFather](https://t.me/BotFather) 创建 Bot，获取 Token
-3. **Telegram Chat ID** — 频道用户名（如 `@my_channel`）或群组/个人数字 ID
-4. **AI API Key** — 任选一个 AI 提供商的 API Key
+## Quick Start
 
-### Docker Compose 部署（推荐）
+### Prerequisites
+
+1. **GitHub Token** — [Create a Personal Access Token](https://github.com/settings/tokens) (no extra scopes needed for public repos)
+2. **Telegram Bot** — Create via [@BotFather](https://t.me/BotFather) to get the Bot Token
+3. **Telegram Chat ID** — Channel username (e.g. `@my_channel`) or group/user numeric ID
+4. **AI API Key** — From any supported AI provider
+
+### Docker Compose (Recommended)
 
 ```bash
-# 克隆项目
-git clone https://github.com/tbphp/github-subscribe-bot.git
+git clone https://github.com/nicepkg/github-subscribe-bot.git
 cd github-subscribe-bot
 
-# 配置环境变量
 cp .env.example .env
-# 编辑 .env 填入你的配置（见下方配置说明）
+# Edit .env with your configuration (see below)
 
-# 配置订阅仓库
 cp subscribe.example.json subscribe.json
-# 编辑 subscribe.json 添加你要订阅的仓库（见下方订阅配置）
+# Edit subscribe.json with repos to subscribe (see below)
 
-# 启动
 docker compose up -d --build
 
-# 查看日志
+# View logs
 docker compose logs -f
 
-# 停止
+# Stop
 docker compose down
 ```
 
-## 配置说明
+## Configuration
 
-所有配置通过环境变量设置，在 `.env` 文件中填写：
+All settings are configured via environment variables in the `.env` file:
 
-| 变量 | 必填 | 默认值 | 说明 |
-|------|------|--------|------|
-| `GITHUB_TOKEN` | ✅ | — | GitHub Personal Access Token |
-| `TELEGRAM_BOT_TOKEN` | ✅ | — | Telegram Bot Token |
-| `TELEGRAM_CHAT_ID` | ✅ | — | 目标频道/群组/用户 ID |
-| `AI_PROVIDER` | ❌ | `openai-completions` | AI 提供商（见下方） |
-| `AI_BASE_URL` | ❌ | 各 SDK 默认值 | 自定义 API 地址（代理/自部署） |
-| `AI_API_KEY` | ✅ | — | AI 服务 API Key |
-| `AI_MODEL` | ✅ | — | 模型名称 |
-| `TIMEZONE` | ❌ | `Asia/Shanghai` | 全局时区（IANA），用于 cron 调度和消息时间格式化 |
-| `CRON` | ✅ | — | Cron 表达式（6 字段，含秒） |
+| Variable             | Required | Default              | Description                                   |
+| -------------------- | -------- | -------------------- | --------------------------------------------- |
+| `GITHUB_TOKEN`       | ✅       | —                    | GitHub Personal Access Token                  |
+| `TELEGRAM_BOT_TOKEN` | ✅       | —                    | Telegram Bot Token                            |
+| `TELEGRAM_CHAT_ID`   | ✅       | —                    | Target channel/group/user ID                  |
+| `AI_PROVIDER`        | ❌       | `openai-completions` | AI provider (see below)                       |
+| `AI_BASE_URL`        | ❌       | SDK default          | Custom API URL (proxy/self-hosted)            |
+| `AI_API_KEY`         | ✅       | —                    | AI service API Key                            |
+| `AI_MODEL`           | ✅       | —                    | Model name                                    |
+| `TIMEZONE`           | ❌       | `Asia/Shanghai`      | IANA timezone for cron and message formatting |
+| `CRON`               | ✅       | —                    | Cron expression (6 fields, with seconds)      |
+| `TARGET_LANG`        | ❌       | `English`            | Target language for AI translation            |
 
-> 兼容性：若未设置 `TIMEZONE`，程序会回退读取 `TZ`；两者都未设置时默认 `Asia/Shanghai`。
-> 校验说明：`TIMEZONE` 必须是 IANA 时区（例如 `Asia/Shanghai`、`UTC`），`UTC+8` 这类写法会被判定为非法并在启动时报错。
+> `TARGET_LANG` controls both AI translation output and category labels (e.g. ✨ Features). Built-in label translations are available for `English`, `Chinese`, and `Japanese`. Other languages will use English labels with AI-translated content.
+>
+> If `TIMEZONE` is not set, the program falls back to `TZ`; if neither is set, defaults to `Asia/Shanghai`.
+> `TIMEZONE` must be a valid IANA timezone (e.g. `Asia/Shanghai`, `UTC`). Formats like `UTC+8` are invalid and will cause a startup error.
 
-### AI 提供商配置
+### AI Providers
 
-`AI_PROVIDER` 支持以下值：
+Supported `AI_PROVIDER` values:
 
-| 值 | 说明 | AI_MODEL 示例 |
-|----|------|---------------|
-| `openai-completions` | OpenAI Chat Completions（默认），兼容所有 OpenAI 代理 | `gpt-4o-mini` |
-| `openai-responses` | OpenAI Responses API | `gpt-4o-mini` |
-| `google` | Google Gemini | `gemini-2.0-flash` |
-| `anthropic` | Anthropic Claude | `claude-sonnet-4-20250514` |
+| Value                | Description                                                           | AI_MODEL Example           |
+| -------------------- | --------------------------------------------------------------------- | -------------------------- |
+| `openai-completions` | OpenAI Chat Completions (default), compatible with all OpenAI proxies | `gpt-4o-mini`              |
+| `openai-responses`   | OpenAI Responses API                                                  | `gpt-4o-mini`              |
+| `google`             | Google Gemini                                                         | `gemini-2.0-flash`         |
+| `anthropic`          | Anthropic Claude                                                      | `claude-sonnet-4-20250514` |
 
-**使用第三方代理**：设置 `AI_PROVIDER=openai-completions`，将 `AI_BASE_URL` 指向代理地址即可。
+**Using a third-party proxy**: Set `AI_PROVIDER=openai-completions` and point `AI_BASE_URL` to your proxy.
 
-`.env` 配置示例：
+`.env` example:
 
 ```env
 GITHUB_TOKEN=ghp_xxxxxxxxxxxx
@@ -88,116 +93,109 @@ AI_API_KEY=sk-xxxxxxxxxxxx
 AI_MODEL=gpt-4o-mini
 TIMEZONE=Asia/Shanghai
 CRON=0 */10 9-23 * * *
+TARGET_LANG=English
 ```
 
-### 定时调度（Cron）
+### Scheduling (Cron)
 
-程序仅使用 `CRON` 调度（基于 `cron` 包）：
+The program uses `CRON` for scheduling (via the `cron` package):
 
 ```env
 TIMEZONE=Asia/Shanghai
 CRON=0 */10 9-23 * * *
 ```
 
-含义：每天 09:00-23:59，每 10 分钟检查一次（夜间不通知）。
+This means: every day 09:00–23:59, check every 10 minutes (no notifications at night).
 
-常用示例：
+Examples:
 
-- 工作日白天每 10 分钟：`0 */10 9-23 * * 1-5`
-- 每天 08:30：`0 30 8 * * *`
+- Weekdays daytime every 10 min: `0 */10 9-23 * * 1-5`
+- Daily at 08:30: `0 30 8 * * *`
 
-> 说明：`CRON` 使用 6 字段格式（秒 分 时 日 月 周），例如 `0 */10 9-23 * * *`。
+> `CRON` uses 6-field format (second minute hour day month weekday), e.g. `0 */10 9-23 * * *`.
 
-## 订阅仓库
+## Subscription
 
-从示例文件创建订阅配置：
+Create your subscription config from the example:
 
 ```bash
 cp subscribe.example.json subscribe.json
 ```
 
-编辑 `subscribe.json`，添加要订阅的 GitHub 仓库（`owner/repo` 格式）：
+Edit `subscribe.json` with GitHub repos to subscribe (`owner/repo` format):
 
 ```json
 {
-  "repos": [
-    "vuejs/core",
-    "nodejs/node",
-    "microsoft/vscode"
-  ]
+  "repos": ["vuejs/core", "nodejs/node", "microsoft/vscode"]
 }
 ```
 
-> `subscribe.json` 已被 `.gitignore` 忽略，不会被 Git 跟踪，可随时修改。
+> `subscribe.json` is gitignored and won't be tracked. Modify freely.
 
-修改后重启容器生效：
+Restart the container after changes:
 
 ```bash
 docker compose restart
 ```
 
-## 消息格式
+## Message Format
 
-Bot 推送的 Telegram 消息示例：
+Example Telegram message from the bot:
 
 ```
 vuejs/core
 
 2025-02-19 14:30:00  v3.5.0
 
-✨ 新功能
-• 新增 useTemplateRef API
-• 支持延迟 Teleport
+✨ Features
+• Added useTemplateRef API
+• Support for deferred Teleport
 
-🐛 修复
-• 修复响应式数组 watch 回调触发异常
+🐛 Bug Fixes
+• Fixed reactive array watch callback trigger issue
 
-⚡ 优化
-• 提升虚拟 DOM diff 性能
+⚡ Performance
+• Improved virtual DOM diff performance
 ```
 
-AI 会将英文 Release Notes 自动翻译为中文，并按类别分组：新功能、修复、优化、重构、文档、其他。
+AI automatically translates English release notes into the configured target language and groups them by category.
 
-## 本地开发
+## Local Development
 
 ```bash
-# 安装依赖
 npm install
-
-# 配置环境变量
 cp .env.example .env
-
-# 配置订阅仓库
 cp subscribe.example.json subscribe.json
+# Edit .env with your tokens
 
-# 开发模式（文件变更自动重启）
-npm run dev
-
-# 直接运行
-npm start
-
-# 编译 TypeScript
-npm run build
+npm run dev    # Dev mode (auto-restart on file changes)
+npm start      # Run directly
+npm run build  # Compile TypeScript
 ```
 
-## 项目结构
+## Project Structure
 
 ```
 ├── src/
-│   ├── index.ts       # 入口，主循环与调度
-│   ├── config.ts      # 环境变量加载与校验
-│   ├── types.ts       # 类型定义
-│   ├── github.ts      # GitHub API 交互与状态管理
-│   ├── ai.ts          # AI 翻译与分类
-│   ├── formatter.ts   # Telegram 消息格式化
-│   └── telegram.ts    # Telegram 消息发送（含重试）
-├── subscribe.example.json  # 订阅仓库列表（示例）
-├── data/              # 运行时状态（自动生成）
+│   ├── index.ts       # Entry point, scheduler
+│   ├── config.ts      # Environment config loader
+│   ├── types.ts       # Type definitions
+│   ├── github.ts      # GitHub API client & state management
+│   ├── ai.ts          # AI translation & categorization
+│   ├── formatter.ts   # Telegram message formatting
+│   ├── telegram.ts    # Telegram message sender (with retry)
+│   └── logger.ts      # Logger utility
+├── subscribe.example.json
+├── data/              # Runtime state (auto-generated)
 ├── Dockerfile
 ├── docker-compose.yml
 └── .env.example
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+
 ## License
 
-MIT
+[MIT](LICENSE)

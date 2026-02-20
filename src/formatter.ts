@@ -1,4 +1,4 @@
-import { CATEGORY_META, type CategorizedRelease } from './types.js';
+import { getCategoryMeta, type CategorizedRelease } from './types.js';
 
 function escapeHtml(text: string): string {
   return text
@@ -7,7 +7,7 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;');
 }
 
-function formatOneRelease(release: CategorizedRelease): string {
+function formatOneRelease(release: CategorizedRelease, targetLang: string): string {
   const lines: string[] = [];
   const tag = escapeHtml(release.tag);
 
@@ -16,7 +16,7 @@ function formatOneRelease(release: CategorizedRelease): string {
   );
 
   for (const cat of release.categories) {
-    const meta = CATEGORY_META[cat.type];
+    const meta = getCategoryMeta(cat.type, targetLang);
     lines.push('');
     lines.push(`${meta.emoji} <b>${meta.label}</b>`);
     for (const item of cat.items) {
@@ -30,6 +30,7 @@ function formatOneRelease(release: CategorizedRelease): string {
 export function formatMessage(
   repo: string,
   releases: CategorizedRelease[],
+  targetLang: string,
 ): string {
   const parts: string[] = [];
 
@@ -38,7 +39,7 @@ export function formatMessage(
   for (let i = 0; i < releases.length; i++) {
     if (i > 0) parts.push('\n┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄');
     parts.push('');
-    parts.push(formatOneRelease(releases[i]));
+    parts.push(formatOneRelease(releases[i], targetLang));
   }
 
   return parts.join('\n');
@@ -49,15 +50,16 @@ const TG_MAX_LENGTH = 4096;
 export function splitMessages(
   repo: string,
   releases: CategorizedRelease[],
+  targetLang: string,
 ): string[] {
-  const full = formatMessage(repo, releases);
+  const full = formatMessage(repo, releases, targetLang);
   if (full.length <= TG_MAX_LENGTH) return [full];
 
   const messages: string[] = [];
   const header = `<b>${escapeHtml(repo)}</b>`;
 
   for (const release of releases) {
-    const body = formatOneRelease(release);
+    const body = formatOneRelease(release, targetLang);
     const msg = `${header}\n\n${body}`;
 
     if (msg.length <= TG_MAX_LENGTH) {

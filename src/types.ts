@@ -42,17 +42,37 @@ export type CategoryType =
   | 'docs'
   | 'other';
 
-export const CATEGORY_META: Record<
-  CategoryType,
-  { emoji: string; label: string }
-> = {
-  feat: { emoji: '✨', label: '新功能' },
-  fix: { emoji: '🐛', label: '修复' },
-  perf: { emoji: '⚡', label: '优化' },
-  refactor: { emoji: '♻️', label: '重构' },
-  docs: { emoji: '📝', label: '文档' },
-  other: { emoji: '📌', label: '其他' },
+export const CATEGORY_EMOJI: Record<CategoryType, string> = {
+  feat: '✨',
+  fix: '🐛',
+  perf: '⚡',
+  refactor: '♻️',
+  docs: '📝',
+  other: '📌',
 };
+
+const CATEGORY_LABELS: Record<string, Record<CategoryType, string>> = {
+  English: {
+    feat: 'Features', fix: 'Bug Fixes', perf: 'Performance',
+    refactor: 'Refactoring', docs: 'Documentation', other: 'Other',
+  },
+  Chinese: {
+    feat: '新功能', fix: '修复', perf: '优化',
+    refactor: '重构', docs: '文档', other: '其他',
+  },
+  Japanese: {
+    feat: '新機能', fix: '修正', perf: '最適化',
+    refactor: 'リファクタリング', docs: 'ドキュメント', other: 'その他',
+  },
+};
+
+export function getCategoryMeta(
+  type: CategoryType,
+  lang: string,
+): { emoji: string; label: string } {
+  const labels = CATEGORY_LABELS[lang] ?? CATEGORY_LABELS['English'];
+  return { emoji: CATEGORY_EMOJI[type], label: labels[type] };
+}
 
 export type AIProvider = 'openai-completions' | 'openai-responses' | 'google' | 'anthropic';
 
@@ -66,4 +86,5 @@ export interface AppConfig {
   aiModel: string;
   cron: string;
   timezone: string;
+  targetLang: string;
 }
