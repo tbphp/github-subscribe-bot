@@ -6,6 +6,7 @@ import type {
   CheckResult,
   TagCheckResult,
   Subscription,
+  ReleaseSubscribeMode,
 } from './types.js';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -15,7 +16,20 @@ const API_BASE = 'https://api.github.com';
 const MAX_TAG_COMMITS = 50;
 
 export function stateKey(sub: Subscription): string {
-  return sub.mode === 'release' ? sub.repo : `${sub.repo}:${sub.mode}`;
+  return sub.mode === 'latest' ? sub.repo : `${sub.repo}:${sub.mode}`;
+}
+
+function releaseStateKey(repo: string, mode: ReleaseSubscribeMode): string {
+  return mode === 'latest' ? repo : `${repo}:${mode}`;
+}
+
+function releaseMatchesMode(
+  release: GitHubRelease,
+  mode: ReleaseSubscribeMode,
+): boolean {
+  if (release.draft) return false;
+  if (mode === 'latest') return !release.prerelease;
+  return release.prerelease;
 }
 
 function buildHeaders(
@@ -50,10 +64,13 @@ export function saveState(state: AppState): void {
 
 export async function checkRepo(
   repo: string,
+  mode: ReleaseSubscribeMode,
   token: string | undefined,
   state: AppState,
 ): Promise<CheckResult> {
-  const repoState = state[repo];
+  const key = releaseStateKey(repo, mode);
+  const logKey = key;
+  const repoState = state[key];
   const headers = buildHeaders(token, repoState?.etag);
 
   const res = await fetch(
@@ -71,7 +88,7 @@ export async function checkRepo(
       const waitMs = Number(resetAt) * 1000 - Date.now();
       if (waitMs > 0) {
         console.warn(
-          `[${repo}] Rate limited, reset in ${Math.ceil(waitMs / 1000)}s`,
+          `[${logKey}] Rate limited, reset in ${Math.ceil(waitMs / 1000)}s`,
         );
       }
     }
@@ -79,17 +96,17 @@ export async function checkRepo(
   }
 
   if (!res.ok) {
-    console.error(`[${repo}] GitHub API error: ${res.status}`);
+    console.error(`[${logKey}] GitHub API error: ${res.status}`);
     return { repo, newReleases: [], etag: repoState?.etag ?? null };
   }
 
   const etag = res.headers.get('etag');
   const releases = (await res.json()) as GitHubRelease[];
 
-  const published = releases.filter((r) => !r.draft);
+  const matched = releases.filter((r) => releaseMatchesMode(r, mode));
 
   if (!repoState?.lastRelease) {
-    const latest = published[0];
+    const latest = matched[0];
     return {
       repo,
       newReleases: latest ? [latest] : [],
@@ -99,7 +116,7 @@ export async function checkRepo(
 
   const newReleases: GitHubRelease[] = [];
   let sentinelFound = false;
-  for (const r of published) {
+  for (const r of matched) {
     if (r.tag_name === repoState.lastRelease) {
       sentinelFound = true;
       break;
@@ -111,7 +128,7 @@ export async function checkRepo(
   if (!sentinelFound && newReleases.length > 0) {
     const cutoff = repoState.lastReleaseDate ?? repoState.lastCheck;
     console.warn(
-      `[${repo}] Last release "${repoState.lastRelease}" not found in API response, using time cutoff: ${cutoff}`,
+      `[${logKey}] Last release "${repoState.lastRelease}" not found in API response, using time cutoff: ${cutoff}`,
     );
     const filtered = newReleases.filter(
       (r) => new Date(r.published_at) > new Date(cutoff),

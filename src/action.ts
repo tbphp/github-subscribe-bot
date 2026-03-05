@@ -5,7 +5,13 @@ import { createAIClient, categorizeRelease } from './ai.js';
 import { splitMessages } from './formatter.js';
 import { sendMessage } from './telegram.js';
 import { setupLogging } from './logger.js';
-import type { AppState, CategorizedRelease, Subscription, GitHubRelease } from './types.js';
+import type {
+  AppState,
+  CategorizedRelease,
+  Subscription,
+  GitHubRelease,
+  ReleaseSubscribeMode,
+} from './types.js';
 
 // Single-run entry point for GitHub Actions (no cron loop)
 setupLogging();
@@ -21,17 +27,19 @@ if (!config.githubToken) {
 
 async function processReleaseRepo(
   repo: string,
+  mode: ReleaseSubscribeMode,
   state: AppState,
 ): Promise<void> {
-  const result = await checkRepo(repo, config.githubToken, state);
+  const key = mode === 'latest' ? repo : `${repo}:${mode}`;
+  const result = await checkRepo(repo, mode, config.githubToken, state);
   const now = new Date().toISOString();
 
   if (result.newReleases.length === 0) {
-    console.log(`[${repo}] No new releases`);
-    if (result.etag && result.etag !== state[repo]?.etag) {
-      state[repo] = {
-        lastRelease: state[repo]?.lastRelease,
-        lastReleaseDate: state[repo]?.lastReleaseDate,
+    console.log(`[${key}] No new releases`);
+    if (result.etag && result.etag !== state[key]?.etag) {
+      state[key] = {
+        lastRelease: state[key]?.lastRelease,
+        lastReleaseDate: state[key]?.lastReleaseDate,
         etag: result.etag,
         lastCheck: now,
       };
@@ -40,7 +48,7 @@ async function processReleaseRepo(
   }
 
   console.log(
-    `[${repo}] Found ${result.newReleases.length} new release(s)`,
+    `[${key}] Found ${result.newReleases.length} new release(s)`,
   );
 
   const categorized: CategorizedRelease[] = [];
@@ -59,18 +67,18 @@ async function processReleaseRepo(
       msg,
     );
     if (!ok) {
-      console.error(`[${repo}] Failed to send Telegram message`);
+      console.error(`[${key}] Failed to send Telegram message`);
       return;
     }
   }
 
-  state[repo] = {
+  state[key] = {
     lastRelease: result.newReleases[0].tag_name,
     lastReleaseDate: result.newReleases[0].published_at,
     etag: result.etag,
     lastCheck: now,
   };
-  console.log(`[${repo}] Notified, latest: ${state[repo].lastRelease}`);
+  console.log(`[${key}] Notified, latest: ${state[key].lastRelease}`);
 }
 
 async function processTagRepo(
@@ -164,7 +172,7 @@ async function processRepo(
   if (sub.mode === 'tag') {
     await processTagRepo(sub.repo, state);
   } else {
-    await processReleaseRepo(sub.repo, state);
+    await processReleaseRepo(sub.repo, sub.mode, state);
   }
 }
 
